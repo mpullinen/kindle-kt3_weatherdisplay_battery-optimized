@@ -1,5 +1,5 @@
 #!/bin/sh
-
+set -x
 #######################################################
 ### Autor: Nico Hartung <nicohartung1@googlemail.com> #
 #######################################################
@@ -27,8 +27,11 @@ LIMGERRWLAN="${SCRIPTDIR}/weathererror_wlan.png"
 LIMGERRNET="${SCRIPTDIR}/weathererror_network.png"
 
 RSRV="10.10.10.21"
-RIMG="${RSRV}/kindle-weather/weatherdata.png"
-RSH="${RSRV}/kindle-weather/${NAME}.sh"
+#RIMG="${RSRV}/kindle-weather/weatherdata.png"
+#RSH="${RSRV}/kindle-weather/${NAME}.sh"
+#RPATH="/var/www/html/kindle-weather"
+RIMG="${RSRV}/weatherdata.png"
+RSH="${RSRV}/${NAME}.sh"
 RPATH="/var/www/html/kindle-weather"
 
 ROUTERIP="10.10.10.1"                  # Workaround, forget default gateway after STR
@@ -81,6 +84,7 @@ wait_wlan() {
 send_sms () {
   ## Disabled
   return
+
   for LINE in ${CONTACTPAGERS}; do
     CONTACTPAGER=`echo ${LINE} | awk -F\| '{print $1}'`
     CONTACTPAGERNAME=`echo ${LINE} | awk -F\| '{print $2}'`
@@ -106,7 +110,7 @@ map_ip_hostname () {
 	  HOSTNAME="kindle-kt3-weiss"
 	else
 	  HOSTNAME="failed_map_ip_hostname"
-	  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Mappging der IP zum HOSTNAME fehlgeschlagen." >> ${LOG} 2>&1
+	  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | IP mapping to HOSTNAME failed." >> ${LOG} 2>&1
 	  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | DEBUG WLAN cmState > `lipc-get-prop com.lab126.wifid cmState`" >> ${LOG} 2>&1
 	  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | DEBUG WLAN signalStrength > `lipc-get-prop com.lab126.wifid signalStrength`" >> ${LOG} 2>&1
 	  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | DEBUG IP ifconfig > `ifconfig ${NET}`" >> ${LOG} 2>&1
@@ -115,7 +119,7 @@ map_ip_hostname () {
 
 
 ##########
-### Skript
+### Script
 
 ### Variables for IFs
 NOTIFYBATTERY=0
@@ -252,13 +256,13 @@ while true; do
       curl --silent --time-cond "${SCRIPTDIR}/${NAME}.sh" --output "${SCRIPTDIR}/${NAME}.sh" "http://${RSH}"
       RMTIMESH=`stat -c %Y "${SCRIPTDIR}/${NAME}.sh"`
       if [ ${RMTIMESH} -gt ${LMTIMESH} ]; then
-        echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Skript aktualisiert, Neustart durchführen." >> ${LOG} 2>&1
+        echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | New script copied, rebooting." >> ${LOG} 2>&1
         chmod 777 "${SCRIPTDIR}/${NAME}.sh"
         reboot
         exit
       fi
     else
-      echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Skript nicht gefunden (HTTP-Status ${RSTATUSSH})." >> ${LOG} 2>&1
+      echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Script not found (HTTP-Status ${RSTATUSSH})." >> ${LOG} 2>&1
     fi
 
     ### Get new Weatherdata
@@ -294,14 +298,15 @@ while true; do
         echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Wetterbild auf Webserver nicht gefunden (HTTP-Status ${RSTATUSSH})." >> ${LOG} 2>&1
     fi
 
-    ### Copy log by ssh
-    cat ${LOG} | ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /mnt/us/scripts/id_rsa_kindle -l kindle ${RSRV} "cat >> ${RPATH}/${NAME}_${HOSTNAME}.log" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-      rm ${LOG}
-      echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Log per SSH an Remote-Server übergeben und lokal gelöscht." >> ${LOG} 2>&1
-    else
-      echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Log konnte nicht an den Remote-Server übergeben werden." >> ${LOG} 2>&1
-    fi
+    #
+    #### Copy log by ssh
+    #cat ${LOG} | ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /mnt/us/scripts/id_rsa_kindle -l kindle ${RSRV} "cat >> ${RPATH}/${NAME}_${HOSTNAME}.log" > /dev/null 2>&1
+    #if [ $? -eq 0 ]; then
+    #  rm ${LOG}
+    #  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Log per SSH an Remote-Server übergeben und lokal gelöscht." >> ${LOG} 2>&1
+    #else
+    #  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Log konnte nicht an den Remote-Server übergeben werden." >> ${LOG} 2>&1
+    #fi
 
   fi
 
@@ -309,14 +314,14 @@ while true; do
   # No stable "wakealarm" with enabled WLAN
   #lipc-set-prop com.lab126.cmd wirelessEnable 0 >> ${LOG} 2>&1
   lipc-set-prop com.lab126.wifid enable 0 >> ${LOG} 2>&1
-  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | WLAN deaktivieren." >> ${LOG} 2>&1
+  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | WLAN deactivated." >> ${LOG} 2>&1
 
   ### Set wakealarm
   echo 0 > /sys/class/rtc/rtc0/wakealarm
   echo ${WAKEUPTIMER} > /sys/class/rtc/rtc0/wakealarm
 
   ### Go into Suspend to Memory (STR)
-  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Ruhezustand starten." >> ${LOG} 2>&1
+  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Suspended." >> ${LOG} 2>&1
   echo "mem" > /sys/power/state
 
 done
