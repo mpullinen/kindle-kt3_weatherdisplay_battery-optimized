@@ -5,6 +5,13 @@ SOURCESVG="cron_kindle-wetter_preprocess.svg"
 TARGETSVG="weatherdata-kindle3.svg"
 SLEEPTIME=30
 
+
+# Start web server
+cd $(dirname $0)
+python3 -m http.server 80 &
+
+
+# Update the PNG file
 while true; do
   DATE=`date "+%Y-%m-%d %H:%M:%S"`
 
