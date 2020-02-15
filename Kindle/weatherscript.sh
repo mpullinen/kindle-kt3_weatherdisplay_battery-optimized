@@ -279,7 +279,7 @@ while true; do
 
 
     let REFRESHCOUNTER=REFRESHCOUNTER+1
-    RSTATUSIMG=`curl --silent --head "http://${RIMG}" | head -n 1 | cut -d$' ' -f2`
+    RSTATUSIMG=`curl --silent --head "http://${RIMG}" | head -n 1 | cut -d' ' -f2`
     if [ ${RSTATUSIMG} -eq 200 ]; then
       curl --silent --output "$LIMG" "http://${RIMG}"
       if [ ${REFRESHCOUNTER} -ne 5 ]; then
