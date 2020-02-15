@@ -26,12 +26,12 @@ LIMGERR="${SCRIPTDIR}/weathererror_image.png"
 LIMGERRWLAN="${SCRIPTDIR}/weathererror_wlan.png"
 LIMGERRNET="${SCRIPTDIR}/weathererror_network.png"
 
-RSRV="192.168.1.10"
+RSRV="10.10.10.21"
 RIMG="${RSRV}/kindle-weather/weatherdata.png"
 RSH="${RSRV}/kindle-weather/${NAME}.sh"
 RPATH="/var/www/html/kindle-weather"
 
-ROUTERIP="192.168.1.1"                  # Workaround, forget default gateway after STR
+ROUTERIP="10.10.10.1"                  # Workaround, forget default gateway after STR
 
 F5INTWORKDAY="\
 06,07,08,15,16,17,18,19|900
@@ -79,6 +79,8 @@ wait_wlan() {
 }
 
 send_sms () {
+  ## Disabled
+  return
   for LINE in ${CONTACTPAGERS}; do
     CONTACTPAGER=`echo ${LINE} | awk -F\| '{print $1}'`
     CONTACTPAGERNAME=`echo ${LINE} | awk -F\| '{print $2}'`
@@ -91,6 +93,11 @@ send_sms () {
 }
 
 map_ip_hostname () {
+  ## Only one host
+  HOSTNAME="kindle3"
+  return
+
+  ## Disabled
 	IP=`ifconfig ${NET} | grep "inet addr" | cut -d':' -f2 | awk '{print $1}'`
 	#HOSTNAME=`nslookup ${IP} | grep Address | grep ${IP} | awk '{print $4}' | awk -F. '{print $1}'`
 	if [ ${IP} == "192.168.1.70" ]; then
@@ -133,7 +140,7 @@ while true; do
   CHECKCPUMODE=`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor | grep -i "powersave"`
   if [ ${CHECKCPUMODE} -eq 0 ]; then
     echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-    echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | CPU runtergetaktet." >> ${LOG} 2>&1
+    echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | CPU powered down." >> ${LOG} 2>&1
   fi
 
   ### Disable Screensaver, no energysaving by powerd
@@ -141,17 +148,17 @@ while true; do
   CHECKSAVER=`lipc-get-prop com.lab126.powerd status | grep -i "prevent_screen_saver:0"`
   if [ ${CHECKSAVER} -eq 0 ]; then
     lipc-set-prop com.lab126.powerd preventScreenSaver 1 >> ${LOG} 2>&1
-    echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Standard Energiesparmodus deaktiviert." >> ${LOG} 2>&1
+    echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Standard Powersaver mode deactivated." >> ${LOG} 2>&1
   fi
 
   ### Check Batterystate
   CHECKBATTERY=`gasgauge-info -s`
-  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Batteriezustand: ${CHECKBATTERY}%" >> ${LOG} 2>&1
+  echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Battery status: ${CHECKBATTERY}%" >> ${LOG} 2>&1
   if [ ${CHECKBATTERY} -gt 80 ]; then
     NOTIFYBATTERY=0
   fi
   if [ ${CHECKBATTERY} -le 1 ]; then
-    echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Batteriezustand 1%, statisches Batteriezustandsbild gesetzt, WLAN deaktivert, Ruhezustand!" >> ${LOG} 2>&1
+    echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Battery status 1%, static battery alert picture show, WLAN deactivated, shutdown!" >> ${LOG} 2>&1
     eips -f -g "${LIMGBATT}"
     lipc-set-prop com.lab126.wifid enable 0
     echo 0 > /sys/class/rtc/rtc0/wakealarm
@@ -170,7 +177,7 @@ while true; do
       if [ $? -eq 0 ]; then
         SUSPENDFOR=`echo ${LINE} | awk -F\| '{print $2}'`
         echo "${SUSPENDFOR}"
-        echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Aufwachintervall für den nächsten Ruhezustand auf ${SUSPENDFOR} gesetzt." >> ${LOG} 2>&1
+        echo "`date '+%Y-%m-%d_%H:%M:%S'` | ${HOSTNAME} | Wake up timer for ${SUSPENDFOR} suspended." >> ${LOG} 2>&1
       fi
     done
   fi
@@ -262,6 +269,10 @@ while true; do
     if [ "${HOSTNAME}" = "kindle-kt3-weiss" ]; then
       RIMG="${RSRV}/kindle-weather/weatherdata-wohnzimmer.png"
     fi
+    if [ "${HOSTNAME}" = "kindle3" ]; then
+      RIMG="${RSRV}/weatherdata-kindle3.png"
+    fi
+
 
     let REFRESHCOUNTER=REFRESHCOUNTER+1
     RSTATUSIMG=`curl --silent --head "http://${RIMG}" | head -n 1 | cut -d$' ' -f2`
