@@ -250,7 +250,7 @@ while true; do
 
     ### Check new Script
     # wget (-N) can't https
-    RSTATUSSH=`curl --silent --head "http://${RSH}" | head -n 1 | cut -d$' ' -f2`
+    RSTATUSSH=`curl --silent --head "http://${RSH}" | head -n 1 | cut -d' ' -f2`
     if [ ${RSTATUSSH} -eq 200 ]; then
       LMTIMESH=`stat -c %Y "${SCRIPTDIR}/${NAME}.sh"`
       curl --silent --time-cond "${SCRIPTDIR}/${NAME}.sh" --output "${SCRIPTDIR}/${NAME}.sh" "http://${RSH}"
